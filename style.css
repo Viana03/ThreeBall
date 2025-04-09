@@ -1,0 +1,161 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+        linear-gradient(to bottom, #000000, #0a0a2a);
+    background-size: 50px 50px, 100px 100px, 150px 150px, 100% 100%;
+}
+
+
+#instructions {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #4ecdc4;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    border: 1px solid #4ecdc4;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.3);
+    font-size: 0.9rem;
+}
+
+kbd {
+    background-color: #0a0a2a;
+    border-radius: 4px;
+    border: 1px solid #4ecdc4;
+    box-shadow: 0 0 8px rgba(78, 205, 196, 0.5);
+    color: #ff6b6b;
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    padding: 3px 6px;
+    margin: 0 3px;
+    font-size: 0.9rem;
+}
+
+#intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(10, 10, 42, 0.9) 0%, rgba(0, 0, 0, 0.95) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: #fff;
+}
+
+#intro-screen h1 {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: #4ecdc4;
+    text-shadow: 0 0 15px rgba(78, 205, 196, 0.8);
+    letter-spacing: 3px;
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    from { text-shadow: 0 0 15px rgba(78, 205, 196, 0.8); }
+    to { text-shadow: 0 0 25px rgba(78, 205, 196, 1), 0 0 35px rgba(78, 205, 196, 0.5); }
+}
+
+#start-button {
+    font-size: 1.5rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(145deg, #4ecdc4, #3aa8a0);
+    color: #0a0a2a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.6);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+}
+
+#start-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(78, 205, 196, 0.9);
+}
+
+#start-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(30deg);
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) rotate(30deg); }
+    100% { transform: translateX(100%) rotate(30deg); }
+}
+
+#score-display, #lives-display {
+    position: absolute;
+    top: 20px;
+    color: #4ecdc4;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.5rem;
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.7);
+    padding: 5px 15px;
+    background-color: rgba(10, 10, 42, 0.5);
+    border-radius: 5px;
+    border: 1px solid #4ecdc4;
+}
+
+#score-display {
+    left: 20px;
+}
+
+#lives-display {
+    right: 20px;
+}
+
+/* Adding a subtle nebula effect in the corners */
+body::before, body::after {
+    content: '';
+    position: fixed;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.15;
+    z-index: -1;
+}
+
+body::before {
+    background: radial-gradient(circle, #ff6b6b, transparent 70%);
+    top: -100px;
+    left: -100px;
+}
+
+body::after {
+    background: radial-gradient(circle, #8e2de2, transparent 70%);
+    bottom: -100px;
+    right: -100px;
+}

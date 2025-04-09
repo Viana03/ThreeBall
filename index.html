@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<!--
+    ThreeBall
+    A recreation of the classic game "Pinball" or "Flipper" using Three.js
+    Developed by:
+    - Tomás Viana, nº 108445
+-->
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ThreeBall</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://threejs.org/build/three.module.js",
+            "three/examples/jsm/controls/OrbitControls": "https://threejs.org/examples/jsm/controls/OrbitControls.js",
+            "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.min.js"
+          }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="intro-screen">
+        <h1>ThreeBall</h1>
+        <button id="start-button">Start the Game!!</button>
+    </div>
+
+    <script type = "module">
+        import { init } from './game.js';
+        document.getElementById('start-button').addEventListener('click', function() {
+            document.getElementById('intro-screen').style.display = 'none';
+            init();
+        });
+    </script>
+</body>
+</html>
