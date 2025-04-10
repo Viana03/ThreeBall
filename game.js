@@ -199,6 +199,7 @@ export function init() {
     // Controles de órbita
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, -2);
+    controls.enablePan = false;
     controls.update();
 
 
