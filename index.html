@@ -17,26 +17,101 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
     <script type="importmap">
         {
-          "imports": {
+        "imports": {
             "three": "https://threejs.org/build/three.module.js",
             "three/examples/jsm/controls/OrbitControls": "https://threejs.org/examples/jsm/controls/OrbitControls.js",
+            "three/examples/jsm/loaders/GLTFLoader": "https://threejs.org/examples/jsm/loaders/GLTFLoader.js",
             "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.min.js"
-          }
+            }
         }
-    </script>
+</script>
 </head>
 
 <body>
     <div id="intro-screen">
         <h1>ThreeBall</h1>
         <button id="start-button">Start the Game!!</button>
-    </div>
+    </div>      <div id="board-selection" style="display: none;">
+        <h2>Select a Table</h2>
+        <div class="board-container">            <div class="board-option" data-board="space">
+                <div class="board-image space-board"></div>
+                <div class="board-name">Space
+                    <div class="difficulty-stars">
+                        <span class="star">★</span>
+                        <span class="star">☆</span>
+                        <span class="star">☆</span>
+                    </div>
+                </div>
+            </div>
+            <div class="board-option" data-board="sky">
+                <div class="board-image sky-board"></div>
+                <div class="board-name">Sky
+                    <div class="difficulty-stars">
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">☆</span>
+                    </div>
+                </div>
+            </div>
+            <div class="board-option" data-board="earth">
+                <div class="board-image earth-board"></div>
+                <div class="board-name">Earth -> Coming soon!
+                    <div class="difficulty-stars">
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                        <span class="star">★</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button id="back-button">Back</button>
 
+    </div>
     <script type = "module">
-        import { init } from './game.js';
+        import { init as initSpaceTable} from './space.js';
+        import { init as initSkyTable } from './sky.js';
+
         document.getElementById('start-button').addEventListener('click', function() {
             document.getElementById('intro-screen').style.display = 'none';
-            init();
+            document.getElementById('board-selection').style.display = 'flex';
+        });
+
+        document.getElementById('back-button').addEventListener('click', function() {
+            document.getElementById('board-selection').style.display = 'none';
+            document.getElementById('intro-screen').style.display = 'flex';
+        });
+
+        document.querySelectorAll('.board-option').forEach(option => {            option.addEventListener('click', function() {
+                const boardType = this.getAttribute('data-board');
+                document.getElementById('board-selection').style.display = 'none';
+                
+                // Remover elementos do jogo anterior
+                const existingCanvas = document.querySelector('canvas');
+                if (existingCanvas) {
+                    existingCanvas.remove();
+                }
+                
+                // Remover elementos da UI do jogo anterior
+                const gameElements = document.querySelectorAll('#score-display, #lives-display, #instructions, #shop-menu, #game-over');
+                gameElements.forEach(el => {
+                    if (el) el.remove();
+                });
+
+                switch (boardType) {
+                    case 'space':
+                        initSpaceTable();
+                        break;
+                    case 'sky':
+                        initSkyTable();
+                        break;
+                    case 'earth':
+                        alert('Earth table coming soon!');
+                        document.getElementById('board-selection').style.display = 'flex';
+                        break;
+                    default:
+                        console.error('Unknown board type:', boardType);
+                }
+            });
         });
     </script>
 </body>

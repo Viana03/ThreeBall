@@ -115,7 +115,7 @@ kbd {
     100% { transform: translateX(100%) rotate(30deg); }
 }
 
-#score-display, #lives-display {
+#score-display, #lives-display, #game-over {
     position: absolute;
     top: 20px;
     color: #4ecdc4;
@@ -134,6 +134,56 @@ kbd {
 
 #lives-display {
     right: 20px;
+}
+
+#game-over {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(10, 10, 42, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+#restart-button {
+    font-size: 1.5rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(145deg, #4ecdc4, #3aa8a0);
+    color: #0a0a2a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.6);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#restart-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(78, 205, 196, 0.9);
+}
+
+#restart-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(30deg);
+    animation: shine 3s infinite;
 }
 
 /* Adding a subtle nebula effect in the corners */
@@ -158,4 +208,243 @@ body::after {
     background: radial-gradient(circle, #8e2de2, transparent 70%);
     bottom: -100px;
     right: -100px;
+}
+
+#board-selection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(ellipse at center, rgba(10, 10, 42, 0.9) 0%, rgba(0, 0, 0, 0.95) 100%);
+    z-index: 1000;
+    font-family: 'Orbitron', sans-serif;
+}
+
+#board-selection h2 {
+    color: #4ecdc4;
+    font-size: 3rem;
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px rgba(78, 205, 196, 0.8);
+    letter-spacing: 3px;
+    animation: pulse 2s infinite alternate;
+}
+
+.board-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 25px;
+    margin-bottom: 30px;
+}
+
+.board-option {
+    width: 350px;
+    height: 300px;
+    background: rgba(10, 10, 42, 0.5);
+    border: 2px solid #4ecdc4;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.3);
+}
+
+.board-option:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(78, 205, 196, 0.7);
+    border-color: #4ecdc4;
+}
+
+.board-image {
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.board-image::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(30deg);
+    animation: shine 3s infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.board-option:hover .board-image::before {
+    opacity: 1;
+}
+
+.space-board {
+    background-image: url('assets/space.png');
+}
+
+.sky-board {
+    background-image: url('assets/sky.jpg');
+}
+
+.earth-board {
+    background-image: url('assets/earth.jpg');
+}
+
+.board-name {
+    padding: 12px;
+    text-align: center;
+    color: #4ecdc4;
+    background-color: rgba(10, 10, 42, 0.8);
+    font-weight: bold;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(78, 205, 196, 0.5);
+    border-top: 1px solid #4ecdc4;
+}
+
+.difficulty-stars {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 0;
+}
+
+.star {
+    color: gold;
+    font-size: 1.2rem;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+#back-button {
+    font-size: 1.2rem;
+    padding: 0.8rem 2rem;
+    background: linear-gradient(145deg, #ff6b6b, #e63b3b);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#back-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 25px rgba(255, 107, 107, 0.9);
+}
+
+#back-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(30deg);
+    animation: shine 3s infinite;
+}
+
+/* Menu de pausa */
+#pause-menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 10, 42, 0.9);
+    border: 2px solid #4ecdc4;
+    border-radius: 10px;
+    padding: 30px;
+    color: white;
+    text-align: center;
+    z-index: 1100;
+    width: 300px;
+    box-shadow: 0 0 25px rgba(78, 205, 196, 0.7);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+#pause-menu h2 {
+    color: #4ecdc4;
+    font-size: 2.5rem;
+    margin-top: 0;
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px rgba(78, 205, 196, 0.8);
+    letter-spacing: 3px;
+}
+
+.pause-button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 15px 0;
+    background: linear-gradient(145deg, #4ecdc4, #3aa8a0);
+    border: none;
+    border-radius: 8px;
+    color: #0a0a2a;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.4);
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+.pause-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px rgba(78, 205, 196, 0.7);
+}
+
+.pause-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        transparent 45%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 55%
+    );
+    transform: rotate(30deg);
+    animation: shine 3s infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.pause-button:hover::before {
+    opacity: 1;
+}
+
+.back-to-menu {
+    background: linear-gradient(145deg, #ff6b6b, #e63b3b);
+    color: white;
 }

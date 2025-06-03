@@ -1,0 +1,99 @@
+function createWall(width, height, depth, position, rotation = { x: 0, y: 0, z: 0 }) {
+        // Visual
+        const wallGeometry = new THREE.BoxGeometry(width, height, depth);
+        const wallMaterial = new THREE.MeshNormalMaterial();
+        const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+        wallMesh.position.copy(position);
+        wallMesh.rotation.set(rotation.x, rotation.y, rotation.z);
+        wallMesh.castShadow = true;
+        scene.add(wallMesh);
+
+        // Física
+        const wallShape = new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2));
+        const wallBody = new CANNON.Body({
+            mass: 0,
+            material: objectMaterial,
+            shape: wallShape
+        });
+        wallBody.position.copy(position);
+        wallBody.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
+        world.addBody(wallBody);
+
+        return { mesh: wallMesh, body: wallBody };
+    }
+
+    // Criar paredes
+    createWall(0.5, 1, 17, new THREE.Vector3(-6, 0.5, -2), { x: 0, y: 0, z: 0 });
+    createWall(0.5, 1, 17, new THREE.Vector3(6, 0.5, -2), { x: 0, y: 0, z: 0 });
+    createWall(0.25, 1, 15, new THREE.Vector3(4.5, 0.5, -1), { x: 0, y: 0, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(-4.5, 0.5, 2), { x: 0, y: 0, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(3, 0.5, 2), { x: 0, y: 0, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(-4.1, 0.5, 3.9), { x: 0, y: Math.PI / 8, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(2.6, 0.5, 3.9), { x: 0, y: -Math.PI / 8, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(3.65, 0.5, 0.4), { x: 0, y: -Math.PI / 4, z: 0 });
+    createWall(0.25, 1, 2, new THREE.Vector3(-5.15, 0.5, 0.4), { x: 0, y: Math.PI / 4, z: 0 });
+
+
+    // Criar parede redonda
+    function createCurvedWall(start, end, radius, height, segments) {
+        // Visual
+        const curve = new THREE.QuadraticBezierCurve3(
+            start,
+            new THREE.Vector3(0, start.y, start.z - radius),
+            end
+        );
+
+        const tubeGeometry = new THREE.TubeGeometry(curve, segments, 0.5, 32, false);
+        const tubeMaterial = new THREE.MeshNormalMaterial({ color: 0x0088ff });
+        const tubeMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        tubeMesh.castShadow = true;
+        scene.add(tubeMesh);
+
+        // Física
+        const physicsSeg = segments * 2;
+        const segmentBodies = [];
+
+        for (let i = 0; i < physicsSeg; i++) {
+            const t1 = i / physicsSeg;
+            const t2 = (i + 1) / physicsSeg;
+
+            const point1 = curve.getPoint(t1);
+            const point2 = curve.getPoint(t2);
+
+            const midPoint = point1.clone().lerp(point2, 0.5);
+            const direction = new THREE.Vector3().subVectors(point2, point1).normalize();
+            const segmentLength = point1.distanceTo(point2);
+            const segmentShape = new CANNON.Box(new CANNON.Vec3(
+                segmentLength / 2,
+                height / 2,
+                0.1
+            ));
+
+            const segmentBody = new CANNON.Body({
+                mass: 0,
+                material: objectMaterial,
+                shape: segmentShape
+            });
+
+            segmentBody.position.set(midPoint.x, midPoint.y + height / 2, midPoint.z);
+            const angle = Math.atan2(direction.z, direction.x);
+            segmentBody.quaternion.setFromEuler(0, angle, 0);
+
+            world.addBody(segmentBody);
+            segmentBodies.push(segmentBody);
+        }
+
+        return { mesh: tubeMesh, bodies: segmentBodies };
+    }
+
+    const guideCurve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(-6, 0.5, -10.5),
+        new THREE.Vector3(0, 0.5, -5),
+        new THREE.Vector3(6, 0.5, -10.5)
+    );
+
+    const guideWall = createCurvedWall(
+        new THREE.Vector3(-6, 0.5, -10.5),
+        new THREE.Vector3(6, 0.5, -10.5),
+        4.5, 1, 30
+    );
