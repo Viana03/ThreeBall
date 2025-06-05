@@ -274,8 +274,10 @@ export function init() {
     world.addBody(transparentPlaneBody);    // Estado do teclado
     const keys = {};
     let gamePaused = false;
-    
+
     document.addEventListener('keydown', event => {
+        if (shopActive) return;
+
         keys[event.code] = true;
 
         if (event.code === 'KeyB') {
@@ -283,7 +285,7 @@ export function init() {
                 createShopMenu();
             }
         }
-        
+
         // Adiciona funcionalidade para pausar com ESC
         if (event.code === 'Escape') {
             if (gameActive && !shopActive) {
@@ -295,16 +297,16 @@ export function init() {
             }
         }
     });
-    
+
     document.addEventListener('keyup', event => {
         keys[event.code] = false;
     });
-    
+
     // Função para pausar o jogo
     function pauseGame() {
         gamePaused = true;
         gameActive = false;
-        
+
         // Criar menu de pausa
         const pauseMenu = document.createElement('div');
         pauseMenu.id = 'pause-menu';
@@ -314,40 +316,40 @@ export function init() {
             <button id="menu-button" class="pause-button back-to-menu">Back to Menu</button>
         `;
         document.body.appendChild(pauseMenu);
-        
+
         // Adicionar eventos aos botões
         document.getElementById('resume-button').addEventListener('click', resumeGame);
         document.getElementById('menu-button').addEventListener('click', backToMenu);
     }
-    
+
     // Função para retomar o jogo
     function resumeGame() {
         const pauseMenu = document.getElementById('pause-menu');
         if (pauseMenu) {
             document.body.removeChild(pauseMenu);
         }
-        
+
         gamePaused = false;
         gameActive = true;
         requestAnimationFrame(animate);
     }
-    
+
     // Função para voltar ao menu de seleção de tabuleiros
     function backToMenu() {
         const pauseMenu = document.getElementById('pause-menu');
         if (pauseMenu) {
             document.body.removeChild(pauseMenu);
         }
-        
+
         // Limpar elementos do jogo
         const gameElements = document.querySelectorAll('#score-display, #lives-display, #instructions');
         gameElements.forEach(el => {
             if (el) el.remove();
         });
-        
+
         // Mostrar menu de seleção de tabuleiros
         document.getElementById('board-selection').style.display = 'flex';
-        
+
         // Remover o canvas atual
         const canvas = document.querySelector('canvas');
         if (canvas) {
@@ -906,8 +908,6 @@ export function init() {
             document.body.removeChild(document.getElementById('shop-menu'));
         }
 
-        const previousGameState = gameActive;
-        gameActive = false;
         shopActive = true;
 
         shopMenu = document.createElement('div');
@@ -944,7 +944,6 @@ export function init() {
                 updateLivesDisplay();
                 scoreDiv.textContent = `Score: ${score}`;
 
-                // Fechar e reabrir para atualizar o estado dos botões
                 createShopMenu();
             }
         });
@@ -952,14 +951,7 @@ export function init() {
         document.getElementById('close-shop').addEventListener('click', () => {
             document.body.removeChild(shopMenu);
             shopActive = false;
-            gameActive = previousGameState;
             shopMenu = null;
-
-            if (gameActive) {
-                setTimeout(() => {
-                    requestAnimationFrame(animate);
-                }, 100); 
-            }
         });
 
         lastShopOfferScore = score;
@@ -998,7 +990,7 @@ export function init() {
                 document.body.removeChild(notification);
             }, 3000);
 
-            lastShopOfferScore = score; 
+            lastShopOfferScore = score;
         }
     }
 
@@ -1083,7 +1075,9 @@ export function init() {
         requestAnimationFrame(animate);
 
         const dt = Math.min(clock.getDelta(), 0.1);
-        world.step(1 / 60, dt);
+        if (!shopActive) {
+            world.step(1 / 60, dt);
+        }
 
         // Atualizar posições dos objetos
         if (ball && ball.mesh && ball.body) {
@@ -1091,7 +1085,9 @@ export function init() {
             ball.mesh.quaternion.copy(ball.body.quaternion);
         }
 
-        checkSensorCollision();
+        if (!shopActive) {
+            checkSensorCollision();
+        }
 
         function checkSensorCollision() {
             if (sensorCooldown || !gameActive || !gameStarted || !ballInPlay) return;

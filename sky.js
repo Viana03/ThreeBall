@@ -368,6 +368,8 @@ vec3 calculateRainbow(vec3 pos, float progress) {
     let gamePaused = false;
 
     document.addEventListener('keydown', event => {
+        if (shopActive) return;
+
         keys[event.code] = true;
 
         if (event.code === 'KeyB') {
@@ -948,8 +950,6 @@ vec3 calculateRainbow(vec3 pos, float progress) {
             document.body.removeChild(document.getElementById('shop-menu'));
         }
 
-        const previousGameState = gameActive;
-        gameActive = false;
         shopActive = true;
 
         shopMenu = document.createElement('div');
@@ -994,14 +994,7 @@ vec3 calculateRainbow(vec3 pos, float progress) {
         document.getElementById('close-shop').addEventListener('click', () => {
             document.body.removeChild(shopMenu);
             shopActive = false;
-            gameActive = previousGameState;
             shopMenu = null;
-
-            if (gameActive) {
-                setTimeout(() => {
-                    requestAnimationFrame(animate);
-                }, 100);
-            }
         });
 
         lastShopOfferScore = score;
@@ -1131,7 +1124,9 @@ vec3 calculateRainbow(vec3 pos, float progress) {
         updateSunPosition();
 
         const dt = Math.min(clock.getDelta(), 0.1);
-        world.step(1 / 60, dt);
+        if (!shopActive) {
+            world.step(1 / 60, dt);
+        }
 
         // Atualizar posições dos objetos
         if (ball && ball.mesh && ball.body) {
@@ -1139,7 +1134,9 @@ vec3 calculateRainbow(vec3 pos, float progress) {
             ball.mesh.quaternion.copy(ball.body.quaternion);
         }
 
-        checkSensorCollision();
+        if (!shopActive) {
+            checkSensorCollision();
+        }
 
         function checkSensorCollision() {
             if (sensorCooldown || !gameActive || !gameStarted || !ballInPlay) return;
