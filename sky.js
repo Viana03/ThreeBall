@@ -1,11 +1,22 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as CANNON from 'cannon-es';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 
 // Inicialização principal
 export function init() {
+
+    const collisionSound = new Audio('assets/colisao.mp3');
+    collisionSound.volume = 0.7;
+    collisionSound.load();
+    function playSound(sound) {
+        const playPromise = sound.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Reprodução de áudio foi prevenida pelo navegador:", error);
+            });
+        }
+    }
 
     // Configuração básica
     const scene = new THREE.Scene();
@@ -17,23 +28,242 @@ export function init() {
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
-    const textureLoader = new THREE.TextureLoader();
-    const panoramaTexture = textureLoader.load('assets/skyPan.png');
+    const skyShaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0.0 },
+            cirrus: { value: 0.6 },
+            cumulus: { value: 1.0 },
+            sunPosition: { value: new THREE.Vector3(-0.5, 0.15, -1) },
+            rainbowTime: { value: -1.0 },
+            rainbowDuration: { value: 3.0 }
+        },
 
-    panoramaTexture.wrapS = THREE.RepeatWrapping;
-    panoramaTexture.wrapT = THREE.RepeatWrapping;
-    panoramaTexture.encoding = THREE.LinearEncoding;
-    renderer.outputEncoding = THREE.sRGBEncoding;
+        vertexShader: `
+    uniform vec3 sunPosition;
+    varying vec3 vPosition;
+    varying vec3 vSunPosition;
 
+    void main() {
+      vPosition = position;
+      vSunPosition = sunPosition;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
 
-    const backgroundMaterial = new THREE.MeshBasicMaterial({
-        map: panoramaTexture,
+        fragmentShader: `
+    precision highp float;
+
+uniform float time;
+uniform float cirrus;
+uniform float cumulus;
+uniform vec3 sunPosition;
+uniform float rainbowTime;
+uniform float rainbowDuration;
+
+varying vec3 vPosition;
+varying vec3 vSunPosition;
+
+const float Br = 0.0025;
+const float Bm = 0.0003;
+const float g = 0.9800;
+const vec3 nitrogen = vec3(0.650, 0.570, 0.475);
+const vec3 Kr = Br / pow(nitrogen, vec3(4.0));
+const vec3 Km = Bm / pow(nitrogen, vec3(0.84));
+
+    // Perlin noise helpers
+    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
+    vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+    vec3 fade(vec3 t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); }
+
+    // Perlin 3D noise
+    float cnoise(vec3 P) {
+      vec3 Pi0 = floor(P);
+      vec3 Pi1 = Pi0 + vec3(1.0);
+      Pi0 = mod289(Pi0);
+      Pi1 = mod289(Pi1);
+      vec3 Pf0 = fract(P);
+      vec3 Pf1 = Pf0 - vec3(1.0);
+      vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+      vec4 iy = vec4(Pi0.y, Pi0.y, Pi1.y, Pi1.y);
+      vec4 iz0 = vec4(Pi0.z);
+      vec4 iz1 = vec4(Pi1.z);
+
+      vec4 ixy = permute(permute(ix) + iy);
+      vec4 ixy0 = permute(ixy + iz0);
+      vec4 ixy1 = permute(ixy + iz1);
+
+      vec4 gx0 = fract(ixy0 * (1.0 / 41.0)) * 2.0 - 1.0;
+      vec4 gy0 = abs(gx0) - 0.5;
+      vec4 tx0 = floor(gx0 + 0.5);
+      gx0 -= tx0;
+
+      vec4 gx1 = fract(ixy1 * (1.0 / 41.0)) * 2.0 - 1.0;
+      vec4 gy1 = abs(gx1) - 0.5;
+      vec4 tx1 = floor(gx1 + 0.5);
+      gx1 -= tx1;
+
+      vec3 g000 = vec3(gx0.x, gy0.x, 1.0 - abs(gx0.x) - abs(gy0.x));
+      vec3 g100 = vec3(gx0.y, gy0.y, 1.0 - abs(gx0.y) - abs(gy0.y));
+      vec3 g010 = vec3(gx0.z, gy0.z, 1.0 - abs(gx0.z) - abs(gy0.z));
+      vec3 g110 = vec3(gx0.w, gy0.w, 1.0 - abs(gx0.w) - abs(gy0.w));
+      vec3 g001 = vec3(gx1.x, gy1.x, 1.0 - abs(gx1.x) - abs(gy1.x));
+      vec3 g101 = vec3(gx1.y, gy1.y, 1.0 - abs(gx1.y) - abs(gy1.y));
+      vec3 g011 = vec3(gx1.z, gy1.z, 1.0 - abs(gx1.z) - abs(gy1.z));
+      vec3 g111 = vec3(gx1.w, gy1.w, 1.0 - abs(gx1.w) - abs(gy1.w));
+
+      vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+      g000 *= norm0.x;
+      g010 *= norm0.y;
+      g100 *= norm0.z;
+      g110 *= norm0.w;
+
+      vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+      g001 *= norm1.x;
+      g011 *= norm1.y;
+      g101 *= norm1.z;
+      g111 *= norm1.w;
+
+      float n000 = dot(g000, Pf0);
+      float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+      float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+      float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+      float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+      float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+      float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+      float n111 = dot(g111, Pf1);
+
+      vec3 fade_xyz = fade(Pf0);
+      vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+      vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+      float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
+      return 2.2 * n_xyz;
+    }
+
+    const mat3 m = mat3(0.0, 1.60,  1.20, 
+                   -1.6, 0.72, -0.96, 
+                   -1.2, -0.96, 1.28);
+
+float fbm(vec3 p) {
+    float f = 0.0;
+    f += cnoise(p) / 2.0; p = m * p * 1.1;
+    f += cnoise(p) / 4.0; p = m * p * 1.2;
+    f += cnoise(p) / 6.0; p = m * p * 1.3;
+    f += cnoise(p) / 12.0; p = m * p * 1.4;
+    f += cnoise(p) / 24.0;
+    return f;
+}
+
+vec3 calculateRainbow(vec3 pos, float progress) {
+    float x = pos.x;
+    float z = pos.z;
+    float y = pos.y;
+
+    vec3 sunDir = normalize(vSunPosition);
+    vec3 center = vec3(-sunDir.x * 0.5, -0.1, -sunDir.z * 0.5);
+    float rainbowRadius = 0.7;
+    float rainbowWidth = 0.07;
+
+    float distToCenter = length(pos - center);
+    float angle = acos(dot(normalize(pos - center), vec3(0.0, 1.0, 0.0)));
+    float normAngle = angle / 3.14159265;
+
+    vec3 color = vec3(0.0);
+
+    if (normAngle < 0.5 && distToCenter > (rainbowRadius - rainbowWidth) && distToCenter < (rainbowRadius + rainbowWidth) && y > center.y) {
+        float relativeWidth = (distToCenter - (rainbowRadius - rainbowWidth)) / (rainbowWidth * 2.0);
+        relativeWidth = 1.0 - relativeWidth;
+        float bandPosition = clamp(relativeWidth, 0.0, 1.0) * 7.0;
+        int band = int(bandPosition);
+
+        if (band == 0) color = vec3(1.0, 0.0, 0.0);
+        else if (band == 1) color = vec3(1.0, 0.5, 0.0);
+        else if (band == 2) color = vec3(1.0, 1.0, 0.0);
+        else if (band == 3) color = vec3(0.0, 1.0, 0.0);
+        else if (band == 4) color = vec3(0.0, 0.0, 1.0);
+        else if (band == 5) color = vec3(0.3, 0.0, 0.5);
+        else color = vec3(0.5, 0.0, 1.0);
+
+        float bandFrac = fract(bandPosition);
+        if (bandFrac < 0.05 || bandFrac > 0.95) color *= 0.8;
+
+        float edgeDistance = abs((distToCenter - rainbowRadius) / rainbowWidth);
+        float edgeFactor = 1.0 - pow(edgeDistance, 0.8);
+        float heightFactor = pow(1.0 - normAngle / 0.5, 0.3);
+
+        return color * edgeFactor * heightFactor * progress * 1.5;
+    }
+
+    return vec3(0.0);
+}
+    
+    
+    void main() {
+    vec3 pos = normalize(vPosition);
+    float absY = abs(pos.y);
+    float safeY = max(absY, 0.01); // evitar divisões perigosas
+
+    vec3 posForNoise = pos;
+    if (pos.y < 0.0) posForNoise.y = -pos.y;
+
+    float mu = dot(pos, normalize(vSunPosition));
+    float rayleigh = 3.0 / (8.0 * 3.14159265) * (1.0 + mu * mu);
+    vec3 mie = (Kr + Km * (1.0 - g * g) / (2.0 + g * g) / pow(1.0 + g * g - 2.0 * g * mu, 1.5)) / (Br + Bm);
+
+    vec3 day_extinction = exp(-exp(-((safeY + vSunPosition.y * 4.0) * (exp(-safeY * 16.0) + 0.1) / 80.0 / Br) *
+                       (exp(-safeY * 16.0) + 0.1) * Kr / Br) * 
+                       exp(-safeY * exp(-safeY * 8.0) * 4.0) * 
+                       exp(-safeY * 2.0) * 4.0);
+
+    vec3 night_extinction = vec3(1.0 - exp(vSunPosition.y)) * 0.2;
+    vec3 extinction = mix(day_extinction, night_extinction, -vSunPosition.y * 0.2 + 0.5);
+    vec3 color = rayleigh * mie * extinction;
+
+    float cirrusDensity = smoothstep(1.0 - cirrus, 1.0, fbm(posForNoise.xyz / safeY * 2.0 + time * 0.05)) * 0.3;
+    color = mix(color, extinction * 4.0, cirrusDensity * safeY);
+
+    for (int i = 0; i < 3; i++) {
+        float d = smoothstep(1.0 - cumulus, 1.0, fbm((0.7 + float(i) * 0.01) * posForNoise.xyz / safeY + time * 0.3));
+        color = mix(color, extinction * d * 5.0, min(d, 1.0) * safeY);
+    }
+
+    color += cnoise(pos * 1000.0) * 0.01;
+
+    if (pos.y < 0.0) color *= 0.7 + 0.3 * (pos.y + 1.0);
+
+    if (rainbowTime >= 0.0) {
+        float fadeIn = smoothstep(0.0, 0.5, rainbowTime);
+        float fadeOut = smoothstep(rainbowDuration - 0.5, rainbowDuration, rainbowTime);
+        float rainbowProgress = fadeIn * (1.0 - fadeOut);
+
+        vec3 sunDir = normalize(vSunPosition);
+        vec3 rotatedPos = normalize(vPosition);
+
+        if (dot(sunDir, vec3(0.0, 1.0, 0.0)) > 0.0) {
+            rotatedPos.z = -rotatedPos.z;
+        }
+
+        vec3 rainbowColor = calculateRainbow(rotatedPos, rainbowProgress);
+        color += rainbowColor;
+    }
+
+    gl_FragColor = vec4(color, 1.0);
+}
+  `,
+
         side: THREE.BackSide
     });
 
     const backgroundGeometry = new THREE.SphereGeometry(500, 60, 60);
-    const backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    const backgroundMesh = new THREE.Mesh(backgroundGeometry, skyShaderMaterial);
+    backgroundMesh.position.set(0, -200, 0);
     scene.add(backgroundMesh);
+
+    let startTime = Date.now();
+    const cycleDuration = 30000;
+    let lastRainbowTime = 0;
+    const rainbowInterval = 30;
 
     // Controles de órbita
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -56,6 +286,22 @@ export function init() {
     spotLight2.penumbra = 0.5;
     spotLight2.castShadow = true;
     scene.add(spotLight2);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunLight.position.set(0, 50, -50);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    scene.add(sunLight);
+
+    function updateSunPosition() {
+        const elapsed = (Date.now() - startTime) % cycleDuration;
+        const progress = elapsed / cycleDuration;
+
+        const sunHeight = Math.sin(progress * Math.PI * 2) * 0.5;
+        skyShaderMaterial.uniforms.sunPosition.value.y = sunHeight;
+        skyShaderMaterial.uniforms.sunPosition.value.x = Math.cos(progress * Math.PI * 2) * 1.0;
+    }
 
 
     // Física
@@ -234,8 +480,6 @@ export function init() {
     createWall(0.25, 1, 2, new THREE.Vector3(3, 0.5, 2), { x: 0, y: 0, z: 0 });
     createWall(0.25, 1, 2, new THREE.Vector3(-4.1, 0.5, 3.9), { x: 0, y: Math.PI / 8, z: 0 });
     createWall(0.25, 1, 2, new THREE.Vector3(2.6, 0.5, 3.9), { x: 0, y: -Math.PI / 8, z: 0 });
-    /* createWall(0.25, 1, 2, new THREE.Vector3(-3, 0.5, -0.5), { x: 0, y: Math.PI / 6, z: 0 });
-    createWall(0.25, 1, 2, new THREE.Vector3(1.5, 0.5, -0.5), { x: 0, y: -Math.PI / 6, z: 0 }); */
 
     // Criar parede redonda
     function createCurvedWall(start, end, radius, height, segments) {
@@ -379,11 +623,35 @@ export function init() {
     const circularPlatform = createCircularPlatform(new THREE.Vector3(-0.5, 0.5, -6));
 
     // Criar plataforma movel
-    /* function createMovingPlatform(position, range, speed) {
-        
-    }
+    function createMovingPlatform(position, range, speed) {
+        // Visual
+        const platformGeometry = new THREE.BoxGeometry(1, 0.5, 0.1);
+        const platformMaterial = new THREE.MeshNormalMaterial();
+        const platformMesh = new THREE.Mesh(platformGeometry, platformMaterial);
+        platformMesh.position.copy(position);
+        platformMesh.castShadow = true;
+        scene.add(platformMesh);
 
-    const movingPlatform = createMovingPlatform(new THREE.Vector3(0, 0.5, -2), 2, 1); */
+        // Física
+        const platformShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.25, 0.05));
+        const platformBody = new CANNON.Body({
+            mass: 0,
+            material: objectMaterial,
+            shape: platformShape
+        });
+        platformBody.position.copy(position);
+        world.addBody(platformBody);
+
+        return {
+            mesh: platformMesh,
+            body: platformBody,
+            range: range,
+            speed: speed,
+            direction: 1,
+            originalPosition: position.clone()
+        };
+    }
+    const movingPlatform = createMovingPlatform(new THREE.Vector3(-0.75, 0.5, -1), 3.5, 1.5);
 
     // Criar flippers
     function createFlipper(position, isLeft) {
@@ -732,7 +1000,7 @@ export function init() {
             if (gameActive) {
                 setTimeout(() => {
                     requestAnimationFrame(animate);
-                });
+                }, 100);
             }
         });
 
@@ -794,6 +1062,9 @@ export function init() {
             scoreDiv.textContent = `Score: ${score}`;
             checkShopAvailability();
 
+            collisionSound.currentTime = 0;
+            playSound(collisionSound);
+
             // Animar o bumper
             if (otherBody === bumper1.body) {
                 bumper1.scale = 1.2;
@@ -803,11 +1074,17 @@ export function init() {
                 bumper3.scale = 1.2;
             }
         }
-
         if (otherBody === circularPlatform.body && !circularPlatform.activated) {
             score += 500;
             scoreDiv.textContent = `Score: ${score}`;
             checkShopAvailability();
+
+            collisionSound.volume = 0.9;
+            collisionSound.currentTime = 0;
+            playSound(collisionSound);
+            setTimeout(() => {
+                collisionSound.volume = 0.7;
+            }, 100);
 
             // Determinar qual plataforma foi ativada
             let activatedPlatform;
@@ -833,10 +1110,25 @@ export function init() {
 
     // Loop de animação
     const clock = new THREE.Clock();
-
     function animate() {
         if (!gameActive) return;
+
         requestAnimationFrame(animate);
+
+        const currentTime = Date.now();
+        if (currentTime - lastRainbowTime > rainbowInterval * 1000) {
+            skyShaderMaterial.uniforms.rainbowTime.value = 0.0;
+            lastRainbowTime = currentTime;
+        }
+
+        if (skyShaderMaterial.uniforms.rainbowTime.value >= 0) {
+            skyShaderMaterial.uniforms.rainbowTime.value += clock.getDelta();
+            if (skyShaderMaterial.uniforms.rainbowTime.value > skyShaderMaterial.uniforms.rainbowDuration.value) {
+                skyShaderMaterial.uniforms.rainbowTime.value = -1;
+            }
+        }
+
+        updateSunPosition();
 
         const dt = Math.min(clock.getDelta(), 0.1);
         world.step(1 / 60, dt);
@@ -1011,8 +1303,16 @@ export function init() {
         circularPlatform.scale = lerp(circularPlatform.scale, 1, dt * 10);
         circularPlatform.mesh.scale.set(circularPlatform.scale, 1, circularPlatform.scale);
 
-        // Atualizar posição da plataforma móvel
-        //movingPlatform.body.position.x = movingPlatform.initialPosition.x + Math.sin(Date.now() * movingPlatform.speed) * movingPlatform.range;
+        // Atualizar posição da plataforma circular
+        if (movingPlatform) {
+            movingPlatform.body.position.x += movingPlatform.direction * movingPlatform.speed * dt;
+            if (movingPlatform.body.position.x <= -5 || movingPlatform.body.position.x >= 3.5) {
+                movingPlatform.direction *= -1;
+            }
+            movingPlatform.mesh.position.copy(movingPlatform.body.position);
+        }
+
+        skyShaderMaterial.uniforms.time.value = clock.getElapsedTime();
 
         renderer.render(scene, camera);
     }

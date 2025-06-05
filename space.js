@@ -7,10 +7,22 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // Inicialização principal
 export function init() {
 
+    const collisionSound = new Audio('assets/colisao.mp3');
+    collisionSound.volume = 0.7;
+    collisionSound.load();
+    function playSound(sound) {
+        const playPromise = sound.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Reprodução de áudio foi prevenida pelo navegador:", error);
+            });
+        }
+    }
+
     // Configuração básica
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 12, 12);
+    camera.position.set(0, 10, 12);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -607,7 +619,7 @@ export function init() {
 
                     // Adicionar o modelo ao grupo
                     const sunModel = gltf.scene;
-                    sunModel.scale.set(1, 1, 1);
+                    sunModel.scale.set(0.7, 0.7, 0.7);
 
                     // Melhorar o material do modelo
                     sunModel.traverse(function (child) {
@@ -638,7 +650,7 @@ export function init() {
             light: sunLight,
             glow: sunGlow,
             angle: 0,
-            radius: 50,
+            radius: 25,
             speed: 0.3,
             height: 5
         };
@@ -758,8 +770,6 @@ export function init() {
                 <kbd>←</kbd><kbd>→</kbd> for Flippers
                 <br>
                 <kbd>Space</kbd> to launch
-                <br>
-                <kbd>B</kbd> to open shop
             `;
         document.body.appendChild(instructionsDiv);
     }
@@ -948,7 +958,7 @@ export function init() {
             if (gameActive) {
                 setTimeout(() => {
                     requestAnimationFrame(animate);
-                }); 
+                }, 100); 
             }
         });
 
@@ -1010,6 +1020,9 @@ export function init() {
             scoreDiv.textContent = `Score: ${score}`;
             checkShopAvailability();
 
+            collisionSound.currentTime = 0;
+            playSound(collisionSound);
+
             // Animar o bumper
             if (otherBody === bumper1.body) {
                 bumper1.scale = 1.2;
@@ -1028,6 +1041,13 @@ export function init() {
             score += 500;
             scoreDiv.textContent = `Score: ${score}`;
             checkShopAvailability();
+
+            collisionSound.volume = 0.9;
+            collisionSound.currentTime = 0;
+            playSound(collisionSound);
+            setTimeout(() => {
+                collisionSound.volume = 0.7;
+            }, 100);
 
             // Determinar qual plataforma foi ativada
             let activatedPlatform;
